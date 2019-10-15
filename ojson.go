@@ -3,6 +3,7 @@ package ojson
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 )
 
 // KV is a pair of key and value for Object
@@ -76,6 +77,25 @@ func (o Object) MarshalJSON() ([]byte, error) {
 	return bb.Bytes(), nil
 }
 
+// UnmarshalJSON implements json.Unmarshaler
+func (o *Object) UnmarshalJSON(data []byte) error {
+	d := NewDecoder(bytes.NewReader(data))
+	v, err := d.Decode()
+	if err != nil {
+		return err
+	}
+	if v == nil {
+		*o = nil
+		return nil
+	}
+	w, ok := v.(Object)
+	if !ok {
+		return fmt.Errorf("not an object: %T", v)
+	}
+	*o = w
+	return nil
+}
+
 // Array represents JSON array.
 type Array []interface{}
 
@@ -83,4 +103,23 @@ type Array []interface{}
 func (a *Array) Add(values ...interface{}) *Array {
 	*a = append(*a, values...)
 	return a
+}
+
+// UnmarshalJSON implements json.Unmarshaler
+func (a *Array) UnmarshalJSON(data []byte) error {
+	d := NewDecoder(bytes.NewReader(data))
+	v, err := d.Decode()
+	if err != nil {
+		return err
+	}
+	if v == nil {
+		*a = nil
+		return nil
+	}
+	w, ok := v.(Array)
+	if !ok {
+		return fmt.Errorf("not an array: %T", v)
+	}
+	*a = w
+	return nil
 }

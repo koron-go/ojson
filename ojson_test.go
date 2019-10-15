@@ -2,8 +2,9 @@ package ojson
 
 import (
 	"encoding/json"
-	"reflect"
 	"testing"
+
+	"github.com/google/go-cmp/cmp"
 )
 
 func testMarshal(t *testing.T, v interface{}, exp string) {
@@ -64,11 +65,43 @@ func TestObject_Delete(t *testing.T) {
 	testMarshal(t, o, `{}`)
 }
 
+func objectUnmarshal(t *testing.T, data string, exp Object) {
+	t.Helper()
+	var act Object
+	err := json.Unmarshal([]byte(data), &act)
+	if err != nil {
+		t.Fatalf("unmarshal failed: %s", err)
+	}
+	if diff := cmp.Diff(exp, act); diff != "" {
+		t.Fatalf("unexpected unmarshal -:expected +:actual\n%s", diff)
+	}
+}
+
+func TestObject_Unmarshal(t *testing.T) {
+	objectUnmarshal(t, `null`, nil)
+	objectUnmarshal(t, `{}`, Object{})
+	objectUnmarshal(t, `{"foo":123,"bar":"zzz","baz":999}`, Object{
+		{"foo", 123.0},
+		{"bar", "zzz"},
+		{"baz", 999.0},
+	})
+	objectUnmarshal(t, `{"foo":123,"bar":{"baz":999,"qux":"zzz"}}`, Object{
+		{"foo", 123.0},
+		{"bar", Object{
+			{"baz", 999.0},
+			{"qux", "zzz"},
+		}},
+	})
+}
+
 func testGet(t *testing.T, o Object, k string, expV interface{}, expOK bool) {
 	t.Helper()
 	actV, actOK := o.Get(k)
-	if actOK != expOK || !reflect.DeepEqual(actV, expV) {
-		t.Fatalf("unexpected (value, ok):\nexpect=(%+v, %t)\nactual=(%+v, %t)", expV, expOK, actV, actOK)
+	if actOK != expOK {
+		t.Fatalf("unexpected OK: expect=%t actual=%t", expOK, actOK)
+	}
+	if diff := cmp.Diff(expV, actV); diff != "" {
+		t.Fatalf("unexpected get -:expected +:actual\n%s", diff)
 	}
 }
 
@@ -109,4 +142,29 @@ func TestArray_Add(t *testing.T) {
 	testMarshal(t, a, `[1,2,3]`)
 	a.Add("xxx", "yyy", "zzz")
 	testMarshal(t, a, `[1,2,3,"xxx","yyy","zzz"]`)
+}
+
+func arrayUnmarshal(t *testing.T, data string, exp Array) {
+	t.Helper()
+	var act Array
+	err := json.Unmarshal([]byte(data), &act)
+	if err != nil {
+		t.Fatalf("unmarshal failed: %s", err)
+	}
+	if diff := cmp.Diff(exp, act); diff != "" {
+		t.Fatalf("unexpected unmarshal -:expected +:actual\n%s", diff)
+	}
+}
+
+func TestArray_Unmarshal(t *testing.T) {
+	arrayUnmarshal(t, `null`, nil)
+	arrayUnmarshal(t, `[]`, Array{})
+	arrayUnmarshal(t, `[1,2,3]`, Array{1.0, 2.0, 3.0})
+	arrayUnmarshal(t,
+		`[{"id":1,"name":"foo"},{"id":2,"name":"bar"},{"id":3,"name":"baz"}]`,
+		Array{
+			Object{{"id", 1.0}, {"name", "foo"}},
+			Object{{"id", 2.0}, {"name", "bar"}},
+			Object{{"id", 3.0}, {"name", "baz"}},
+		})
 }
