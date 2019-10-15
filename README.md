@@ -6,8 +6,6 @@
 
 **ojson** is a package to describe **o**rdered **JSON** object.
 
-Ordered JSON
-
 ```go
 // this gets `{"foo":123,"bar":"xyz"}`
 json.Marshal(ojson.Object{
