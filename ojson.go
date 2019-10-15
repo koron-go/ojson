@@ -80,7 +80,7 @@ func (o Object) MarshalJSON() ([]byte, error) {
 type Array []interface{}
 
 // Add appends elements at last of the Array.
-func (a *Array) Add(values...interface{}) *Array {
+func (a *Array) Add(values ...interface{}) *Array {
 	*a = append(*a, values...)
 	return a
 }
